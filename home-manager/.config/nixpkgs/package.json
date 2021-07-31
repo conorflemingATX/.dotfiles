@@ -1,0 +1,18 @@
+{
+  "name": "nixpkgs",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "eslint": "^7.31.0",
+    "node2nix": "^1.9.0",
+    "prettier": "^2.3.2",
+    "typescript": "^4.3.5",
+    "typescript-language-server": "^0.5.4"
+  }
+}
