@@ -10,6 +10,7 @@ in
       (import (builtins.fetchTarball {
         url = https://github.com/nix-community/emacs-overlay/archive/master.tar.gz;
       }))
+      (import ./extrapkgs.nix)
     ];
 
     imports = [
@@ -32,7 +33,7 @@ in
     home.homeDirectory = "/home/conor";
 
     home.sessionVariables = {
-      ELS_INSTALL_PREFIX = "${builtins.dirOf pkgs.elixir_ls}";
+      ELS_INSTALL_PREFIX = "${builtins.dirOf pkgs.elixir-ls}";
     };
 
     # NixDirenv values
@@ -86,7 +87,7 @@ in
       extraPackages = (epkgs : [
         epkgs.jupyter
         fira-code
-        elixir_ls
+        elixir-ls
       ]);
     };
     services.emacs.enable = true;
