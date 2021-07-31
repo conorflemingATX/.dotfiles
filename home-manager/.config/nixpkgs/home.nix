@@ -31,6 +31,10 @@ in
     home.username = "conor";
     home.homeDirectory = "/home/conor";
 
+    home.sessionVariables = {
+      ELS_INSTALL_PREFIX = "${builtins.dirOf pkgs.elixir_ls}";
+    };
+
     # NixDirenv values
     programs.direnv.enable = true;
     programs.direnv.enableNixDirenvIntegration = true;
@@ -38,6 +42,7 @@ in
     nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [
       "spotify"
       "spotify-unwrapped"
+      "google-chrome-dev"
     ];
 
     fonts.fontconfig.enable = true;
@@ -81,6 +86,7 @@ in
       extraPackages = (epkgs : [
         epkgs.jupyter
         fira-code
+        elixir_ls
       ]);
     };
     services.emacs.enable = true;
@@ -115,5 +121,6 @@ in
       ]))
       poetry
       neofetch
+      google-chrome-dev
     ];
   }

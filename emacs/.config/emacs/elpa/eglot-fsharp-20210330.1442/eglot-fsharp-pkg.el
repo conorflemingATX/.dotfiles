@@ -1,0 +1,2 @@
+;;; Generated package description from /home/conor/.config/emacs/elpa/eglot-fsharp-20210330.1442/eglot-fsharp.el  -*- no-byte-compile: t -*-
+(define-package "eglot-fsharp" "20210330.1442" "fsharp-mode eglot integration" '((emacs "26.3") (eglot "1.4") (fsharp-mode "1.10") (jsonrpc "1.0.14")) :commit "93b1fbc31d73286a18640a36fc2be87d1736e0f2" :authors '(("Jürgen Hötzel" . "juergen@archlinux.org")) :maintainer '("Jürgen Hötzel" . "juergen@archlinux.org") :keywords '("languages") :url "https://github.com/fsharp/emacs-fsharp-mode")
