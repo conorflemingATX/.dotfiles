@@ -59,9 +59,14 @@
   (setq auto-save-file-name-transforms
 	`((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
 
+;; exec-path -------------------------------------------------------------------
+(use-package exec-path-from-shell
+  :ensure
+  :init (exec-path-from-shell-initialize))
+
 ;; quick-peek ------------------------------------------------------------------
-(use-package quick-peek
-  :ensure t)
+;; (use-package quick-peek
+;;   :ensure t)
 
 ;; swiper ----------------------------------------------------------------------
 (use-package swiper
@@ -85,7 +90,9 @@
 	 lsp-headerline-breadcrumb-enable nil
 	 lsp-modeline-code-actions-enable nil
 	 lsp-modeline-diagnostics-enable nil
-	 lsp-modeline-workspace-status-enable nil))
+	 lsp-modeline-workspace-status-enable nil)
+  (setq lsp-rust-analyzer-cargo-watch-command "clippy"
+	lsp-rust-analyzer-server-display-inlay-hints t))
 
 (use-package lsp-ui
   :ensure t
@@ -258,11 +265,17 @@
 (add-hook 'json-mode #'cf/format-json-on-save)
 
 ;; web-mode --------------------------------------------------------------------
+
+
 (use-package add-node-modules-path
   :ensure t
-  :after flycheck
+  :after (flycheck web-mode)
   :hook
-  (flycheck-mode . add-node-modules-path))
+  (web-mode . add-node-modules-path)
+  :config
+  (when (executable-find "eslint")
+    (print "found eslint!")))
+
 
 (defun web-mode-init-prettier ()
   "Configure prettier for use with 'web-mode'."
@@ -277,106 +290,132 @@
 (setq web-mode-css-indent-offset 2)
 (use-package web-mode
   :ensure t
-  :after '(lsp flycheck add-node-modules-path prettier-js)
-  :hook (web-mode . web-mode-init-prettier)
+  :after (flycheck prettier-js)
+  :hook
+  (web-mode . web-mode-init-prettier)
+  (web-mode . lsp)
   :mode (("\\.js\\'" . web-mode)
 	 ("\\.jsx\\'" . web-mode)
 	 ("\\.ts\\'" . web-mode)
 	 ("\\.tsx\\'" . web-mode)
 	 ("\\.html\\'" . web-mode))
-  :commands web-mode
-  :config
-  ((flycheck-add-mode 'javascript-eslint 'web-mode)
-   (setq lsp-eslint-enable t)))
+  :commands web-mode)
 
 ;; Typescript ------------------------------------------------------------------
 (use-package prettier-js
   :ensure t)
 
 ;; Nix -------------------------------------------------------------------------
-(use-package nix-mode
-  :ensure t
-  :mode "\\.nix\\'")
+;;(use-package nix-mode
+;;  :ensure t
+;;  :mode ("\\.nix\\'"))
 
 ;; Elixir ----------------------------------------------------------------------
-(use-package elixir-mode
-  :ensure t
-  :defer t
-  :after '(lsp flycheck)
-  :hook
-  ((elixir-mode . (lambda () (add-hook 'before-save-hook 'elixir-format nil r)))
-   (elixir-mode . lsp)))
+;; (use-package elixir-mode
+;;   :ensure t
+;;   :defer t
+;;   :after '(lsp flycheck)
+;;   :hook
+;;   ((elixir-mode . (lambda () (add-hook 'before-save-hook 'elixir-format nil r)))
+;;    (elixir-mode . lsp)))
 
 ;; Ocaml -----------------------------------------------------------------------
-(defun in-nix-shell-p ()
-  "Predicate indicating if in nix-shell."
-  (string-equal (getenv "IN_NIX_SHELL") "1"))
-
-(use-package tuareg
-  :ensure t
-  :config
-  ((setq conor/merlin-site-elisp (getenv "MERLIN_SITE_LISP"))
-   (setq conor/utop-site-elisp (getenv "UTOP_SITE_LISP"))
-   (setq conor/ocp-site-elisp (getenv "OCP_INDENT_SITE_LISP")))
-  :hook
-  (tuareg-mode .lsp))
-
-(use-package utop
-  :ensure t
-  :hook
-  (tuareg-mode . utop-minor-mode)
-  :config
-  (setq utop-command "utop -emacs"))
-
-(use-package merlin
-  :ensure t
-  :hook
-  ((tuareg-mode . merlin-mode)
-   (merlin-mode . company-mode))
-  :config
-  (customize-set-variable 'merlin-command "ocamlmerlin"))
-
-(use-package ocp-indent
-  :ensure t)
+;; (defun in-nix-shell-p ()
+;;   "Predicate indicating if in nix-shell."
+;;   (string-equal (getenv "IN_NIX_SHELL") "1"))
+;; 
+;; (use-package tuareg
+;;   :ensure t
+;;   :config
+;;   ((setq conor/merlin-site-elisp (getenv "MERLIN_SITE_LISP"))
+;;    (setq conor/utop-site-elisp (getenv "UTOP_SITE_LISP"))
+;;    (setq conor/ocp-site-elisp (getenv "OCP_INDENT_SITE_LISP")))
+;;   :hook
+;;   (tuareg-mode .lsp))
+;; 
+;; (use-package utop
+;;   :ensure t
+;;   :hook
+;;   (tuareg-mode . utop-minor-mode)
+;;   :config
+;;   (setq utop-command "utop -emacs"))
+;; 
+;; (use-package merlin
+;;   :ensure t
+;;   :hook
+;;   ((tuareg-mode . merlin-mode)
+;;    (merlin-mode . company-mode))
+;;   :config
+;;   (customize-set-variable 'merlin-command "ocamlmerlin"))
+;; 
+;; (use-package ocp-indent
+;;   :ensure t)
 
 ;; Haskell ---------------------------------------------------------------------
-(use-package haskell-mode
-  :ensure t
-  :mode
-  (("\\.hs\\'" . haskell-mode)
-   ("\\.hsc\\'" . haskell-mode)
-   ("\\.c2hs\\'" . haskell-mode)
-   ("\\.cpphs\\'" . haskell-mode)
-   ("\\.lhs\\'" . haskell-literate-mode))
-  :hook
-  (haskell-mode . (lambda ()
-		    ;; Key bindings for Haskell process
-		    (define-key haskell-mode-map [?\C-c ?\C-l] 'haskell-process-load-file)
-		    (define-key haskell-mode-map [f5] 'haskell-process-load-file)
-		    ;; switch to repl
-		    (define-key haskell-mode-map [?\C-c ?\C-z] 'haskell-interactive-switch)
-		    (define-key haskell-mode-map (kbd "C-@") 'haskell-interactive-bring)
-		    ;; Set formatting on save
-		    (setq haskell-stylish-on-save t)
-		    (setq haskell-mode-stylish-haskell-path "brittany")
-		    (subword-mode)))
-  :config
-  (setq tab-width 2
-	haskell-process-log t
-	haskell-notify-p t))
+;;(use-package haskell-mode
+;;  :ensure t
+;;  :mode
+;;  (("\\.hs\\'" . haskell-mode)
+;;   ("\\.hsc\\'" . haskell-mode)
+;;   ("\\.c2hs\\'" . haskell-mode)
+;;   ("\\.cpphs\\'" . haskell-mode)
+;;   ("\\.lhs\\'" . haskell-literate-mode))
+;;  :hook
+;;  (haskell-mode . (lambda ()
+;;		    ;; Key bindings for Haskell process
+;;		    (define-key haskell-mode-map [?\C-c ?\C-l] 'haskell-process-load-file)
+;;		    (define-key haskell-mode-map [f5] 'haskell-process-load-file)
+;;		    ;; switch to repl
+;;		    (define-key haskell-mode-map [?\C-c ?\C-z] 'haskell-interactive-switch)
+;;		    (define-key haskell-mode-map (kbd "C-@") 'haskell-interactive-bring)
+;;		    ;; Set formatting on save
+;;		    (setq haskell-stylish-on-save t)
+;;		    (setq haskell-mode-stylish-haskell-path "brittany")
+;;		    (subword-mode)))
+;;  :config
+;;  (setq tab-width 2
+;;	haskell-process-log t
+;;	haskell-notify-p t))
 
 ;; F# --------------------------------------------------------------------------
-(use-package dotnet
-  :ensure t)
+;; (use-package dotnet
+;;   :ensure t)
+;; 
+;; (use-package fsharp-mode
+;;   :ensure t
+;;   :after '(eglot flycheck flycheck-inline)
+;;   :hook
+;;   ((fsharp-mode . eglot-ensure)
+;;    (fsharp-mode . dotnet-mode))
+;;   :init
+;;   ((setq inferior-fsharp-program "dotnet fsi --readline-")))
 
-(use-package fsharp-mode
-  :ensure t
-  :after '(eglot flycheck flycheck-inline)
-  :hook
-  ((fsharp-mode . eglot-ensure)
-   (fsharp-mode . dotnet-mode))
-  :init
-  ((setq inferior-fsharp-program "dotnet fsi --readline-")))
+;; Rust ------------------------------------------------------------------------
+(use-package rustic
+  :ensure
+  :bind (:map rustic-mode-map
+	      ("M-j" . lsp-ui-imenu)
+	      ("M-?" . lsp-find-references)
+	      ("C-c C-c l" . flycheck-list-errors)
+	      ("C-c C-c a" . lsp-execute-code-action)
+	      ("C-c C-c r" . lsp-rename)
+	      ("C-c C-c q" . lsp-workspace-restart)
+	      ("C-c C-c Q" . lsp-workspace-shutdown)
+	      ("C-c C-c s" . lsp-rust-analyzer-status))
+  :config
+  ;; uncomment for less flashiness
+  ;; (setq lsp-eldoc-hook nil)
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  ;; (setq lsp-signature-auto-activate nil)
+
+  ;; comment to disable rustfmt on save
+  (setq rustic-format-on-save t)
+  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+
+(defun rk/rustic-mode-hook ()
+  "So that run works without having to confirm."
+  (when buffer-file-name
+    (setq-local buffer-save-without-query t)))
 
 ;; custom variables (Do not edit) ----------------------------------------------
 (custom-set-variables

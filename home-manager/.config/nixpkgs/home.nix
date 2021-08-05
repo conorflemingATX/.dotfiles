@@ -70,6 +70,17 @@ in
     # Ssh Config
     programs.ssh = {
       enable = true;
+      matchBlocks = {
+        "github.com" = {
+          hostname = "github.com";
+          identityFile = "/home/conor/.ssh/conorflemingATXgh";
+        };
+        
+        "ssh.dev.azure.com" = {
+          hostname = "ssh.dev.azure.com";
+          identityFile = "/home/conor/.ssh/nitco-devops";
+        };
+      };
     };
 
     # Set terminal font
@@ -88,6 +99,9 @@ in
         epkgs.jupyter
         fira-code
         elixir-ls
+        rust-analyzer
+        nodePackages.eslint
+        nodePackages.prettier
       ]);
     };
     services.emacs.enable = true;
