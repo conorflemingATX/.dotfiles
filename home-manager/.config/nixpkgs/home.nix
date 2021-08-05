@@ -15,7 +15,6 @@ in
 
     imports = [
       nur-no-pkgs.repos.rycee.hmModules.emacs-init
-      ~/.config/nixpkgs/dconf.nix
     ];
 
     nixpkgs.config.packageOverrides = super : let self = super.pkgs; in {
@@ -37,8 +36,13 @@ in
     };
 
     # NixDirenv values
-    programs.direnv.enable = true;
-    programs.direnv.enableNixDirenvIntegration = true;
+    programs.direnv = {
+      enable = true;
+
+      nix-direnv = {
+        enable = true;
+      };
+    };
 
     nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [
       "spotify"
@@ -51,9 +55,26 @@ in
     # Bash Config
     programs.bash = {
       enable = true;
+      initExtra = ''
+        DIR=~/.nix-profile/etc/profile.d
+        [[ -f "$DIR/nix.sh" ]] && . "$DIR/nix.sh"
+        [[ -f "$DIR/hm-session-vars.sh" ]] && . "$DIR/hm-session-vars.sh"
+      '';
       shellAliases = {
         emacs = "emacs -nw";
+        ls = "lsd";
+        l = "ls -l";
+        la = "ls -a";
+        lla = "ls -la";
+        lt = "ls --tree";
       };
+      bashrcExtra = ''
+        if [ "`id -u`" -eq 0 ]; then
+          PS1="[ \[\e[1;31m\]λ\[\e[1;32m\]\[\e[49m\] \w \[\e[0m\]] "
+        else
+          PS1="[ \[\e[1;32m\]λ \w \[\e[0m\]] "
+        fi
+      '';
     };
 
     # Git Config
@@ -117,10 +138,9 @@ in
     home.stateVersion = "21.03";
 
     home.packages = [
+      lsd
       stow
-      gnome3.gnome-tweak-tool
       spotify
-      dconf2nix
       (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
       fd
       fzf
