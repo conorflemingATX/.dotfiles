@@ -3,7 +3,10 @@
 with pkgs;
 
 let
-  nur-no-pkgs = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {};
+  nur-no-pkgs = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") { };
+  nur = import (builtins.fetchTarball "https://github.com/nix-community/NUR/archive/master.tar.gz") {
+    inherit pkgs;
+  };
 in
   {
     nixpkgs.overlays = [
@@ -38,13 +41,11 @@ in
     # NixDirenv values
     programs.direnv = {
       enable = true;
-
-      nix-direnv = {
-        enable = true;
-      };
+      enableNixDirenvIntegration = true;
     };
 
     nixpkgs.config.allowUnfreePredicate = pkg: builtins.elem (pkgs.lib.getName pkg) [
+      "vscode"
       "spotify"
       "spotify-unwrapped"
       "google-chrome-dev"
@@ -69,11 +70,7 @@ in
         lt = "ls --tree";
       };
       bashrcExtra = ''
-        if [ "`id -u`" -eq 0 ]; then
-          PS1="[ \[\e[1;31m\]λ\[\e[1;32m\]\[\e[49m\] \w \[\e[0m\]] "
-        else
-          PS1="[ \[\e[1;32m\]λ \w \[\e[0m\]] "
-        fi
+      eval "$(starship init bash)"
       '';
     };
 
@@ -126,6 +123,22 @@ in
       ]);
     };
     services.emacs.enable = true;
+
+    # VsCode
+    programs.vscode = {
+      enable = true;
+      package = pkgs.vscodium;
+      extensions = with pkgs.vscode-extensions; [
+        haskell.haskell
+      ] ++ pkgs.vscode-utils.extensionsFromVscodeMarketplace [
+        {
+          name = "vscode";
+          publisher = "dbaeumer";
+          version = "2.1.14";
+          sha256 = "113w2iis4zi4z3sqc3vd2apyrh52hbh2gvmxjr5yvjpmrsksclbd";
+        }
+      ];
+    };
     
     # This value determines the Home Manager release that your
     # configuration is compatible with. This helps avoid breakage
@@ -140,6 +153,7 @@ in
     home.packages = [
       lsd
       stow
+      starship
       spotify
       (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
       fd
@@ -157,5 +171,6 @@ in
       poetry
       neofetch
       google-chrome-dev
+      remmina
     ];
   }

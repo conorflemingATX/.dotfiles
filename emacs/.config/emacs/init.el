@@ -237,6 +237,7 @@
                                                        (:session . "py"))))
 
 (use-package org
+  :ensure org-plus-contrib
   :hook (org-mode . efs/org-mode-setup)
   :config
   (setq org-ellipsis " ▾")
