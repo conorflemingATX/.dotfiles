@@ -1,0 +1,79 @@
+* Nixos Configuration
+
+** Dependencies
+    These are the basic dependencies for the setup. Obviously, we can assume that nix is installed, particularly since we are using nixos, and using this configuration to manage the entire machine. But at a basic level, even just setting up the project, checking it out, requires git, git-crypt, and stow....
+    
+#+begin_src nix
+# nixos-rebuild
+with pkgs; [
+  git
+  git-crypt
+  stow
+  gnupg
+]
+#+end_src
+
+#+begin_src bash
+git clone ...
+# .. git-crypt stuff
+#+end_src
+
+I guess that right in the base directory I could have a nix flake that would have a development environment that could install the relevant packages to managing the system.
+
+#+begin_src nix :tangle flake.nix
+{
+  description = "Configuration of NixOS for Conor Fleming";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+  };
+  outputs = { nixpkgs, ... }:
+    let
+      inherit (nixpkgs) lib;
+      forAllSystems = lib.genAttrs lib.systems.flakeExposed;
+      managementDependencies = { pkgs }: with pkgs; [
+        git
+        git-crypt
+        gnupg
+        stow
+        direnv
+      ];
+    in
+      {
+        devShells = forAllSystems (system:
+          let
+            pkgs = nixpkgs.legacyPackages.${system};
+          in
+            {
+              default = pkgs.mkShell {
+                packages = managementDependencies { inherit pkgs; };
+                env = {};
+                shellHook = '''';
+              };
+            }
+        );
+
+        packages = forAllSystems (system:
+          let
+            pkgs = nixpkgs.legacyPackages.${system};
+            deps = managementDependencies { inherit pkgs; };
+          in
+            {
+              stowed-config-location = /home/conor/.dotfiles/nixos/configuration-flake.nix;
+              
+              rebuild-script = pkgs.writeText "rebuild-system.sh" ''
+              sudo nixos-rebuild switch -I nixos-config=${stowed-config-location}
+              ''; 
+
+              rebuild-system = pkgs.runCommandNoCCLocal "rebuild-system" {
+                nativeBuildInputs = with pkgs; [ makeWrapper ];
+                buildInputs = deps;
+              } ''
+                install -Dm 755 ${rebuild-script} $out/bin/rebuild-system
+                patchShebangs $out/bin/rebuild-system.sh
+                wrapProgram $out/bin/rebuild-system.sh \
+                  --prefix PATH : ${pkgs.lib.makeBinPath deps}
+                '';
+            });
+      };
+}
+#+end_src

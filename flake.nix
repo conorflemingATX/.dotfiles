@@ -1,0 +1,53 @@
+{
+  description = "Configuration of NixOS for Conor Fleming";
+  inputs = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+  };
+  outputs = { nixpkgs, ... }:
+    let
+      inherit (nixpkgs) lib;
+      forAllSystems = lib.genAttrs lib.systems.flakeExposed;
+      managementDependencies = { pkgs }: with pkgs; [
+        git
+        git-crypt
+        gnupg
+        stow
+        direnv
+      ];
+    in
+      {
+        devShells = forAllSystems (system:
+          let
+            pkgs = nixpkgs.legacyPackages.${system};
+          in
+            {
+              default = pkgs.mkShell {
+                packages = managementDependencies { inherit pkgs; };
+                env = {};
+                shellHook = '''';
+              };
+            }
+        );
+
+        packages = forAllSystems (system:
+          let
+            pkgs = nixpkgs.legacyPackages.${system};
+            deps = managementDependencies { inherit pkgs; };
+            stowed-config-location = /home/conor/.dotfiles/nixos/flake.nix;
+            rebuild-script = pkgs.writeText "rebuild-system.sh" ''
+              sudo nixos-rebuild switch -I nixos-config=${stowed-config-location}
+            ''; 
+          in
+            {
+              rebuild-system = pkgs.runCommandNoCCLocal "rebuild-system" {
+                nativeBuildInputs = with pkgs; [ makeWrapper ];
+                buildInputs = deps;
+              } ''
+                install -Dm 755 ${rebuild-script} $out/bin/rebuild-system
+                patchShebangs $out/bin/rebuild-system.sh
+                wrapProgram $out/bin/rebuild-system.sh \
+                  --prefix PATH : ${pkgs.lib.makeBinPath deps}
+                '';
+            });
+      };
+}
