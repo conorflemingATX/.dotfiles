@@ -38,7 +38,7 @@
       eo     = import emacs-overlay;
       otherPackages = final: prev: {
         python-package-template = python-package-template.packages.${system}.default;
-        emacs-package-template = emacs-package-template.packages.default;
+        emacs-package-template = emacs-package-template.packages.${system}.default;
       };
       pkgs   = (import nixpkgs {
         inherit system;
