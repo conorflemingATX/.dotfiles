@@ -1,14 +1,2 @@
 .direnv
-emacs/.config/emacs/var
-emacs/.config/emacs/etc
-emacs/.config/emacs/elpa
-emacs/.config/emacs/Fs*
-emacs/.config/emacs/auto-save-list
-emacs/.config/emacs/backup-files
-emacs/.config/emacs/dap*
-emacs/.config/emacs/eln*
-emacs/.config/emacs/lsp-cache
-emacs/.config/emacs/org-roam.db
-emacs/.config/emacs/quelpa
-emacs/.config/emacs/parinfer-rust
 result
