@@ -5,6 +5,7 @@
 
     home.packages = with pkgs; [
       plantuml
+      python-package-template
     ];
 
     home.sessionVariables = {};

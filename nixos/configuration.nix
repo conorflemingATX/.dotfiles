@@ -95,6 +95,7 @@
     enable = true;
     enableSSHSupport = true;
   };
+  programs.nix-ld.enable = true;
 
   # List services that you want to enable:
   # Docker

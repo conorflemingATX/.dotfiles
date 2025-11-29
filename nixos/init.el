@@ -65,8 +65,6 @@
                          ("melpa-stable" . "https://stable.melpa.org/packages/")
                          ("elpa"         . "https://elpa.gnu.org/packages/")))
 
-(package-initialize)
-
 ;; Refresh package list
 (when (not package-archive-contents)
   (package-refresh-contents))
@@ -83,14 +81,13 @@
 
 (use-package doom-themes
   :ensure t
+  :custom
+  (doom-themes-enable-bold t)
+  (doom-themes-enable-italic t)
   :config
-  (setq doom-themes-enable-bold t
-        doom-themes-enable-italic t)
   (setq doom-font (font-spec :family "Iosevka" :size 12))
   (load-theme 'doom-dracula t)
   (doom-themes-visual-bell-config)
-  (setq doom-themes-treemacs-theme "doom-atom")
-  (doom-themes-treemacs-config)
   (doom-themes-org-config))
 
 (use-package doom-modeline
@@ -437,6 +434,4 @@
 ;; Posted by user355252, modified by community. See post 'Timeline' for change history
 ; Retrieved 2025-11-27, License - CC BY-SA 3.0
 (setq-default flycheck-emacs-lisp-load-path 'inherit)
-(add-to-list 'load-path (expand-file-name "~/.config/emacs/config"))
-
-(require 'config)
+(require 'emacs-package-template)
