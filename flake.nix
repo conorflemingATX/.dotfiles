@@ -10,9 +10,9 @@
       managementDependencies = { pkgs }: with pkgs; [
         git
         git-crypt
-        gnupg
-        stow
-        direnv
+        age
+        ssh-to-age
+        sops
       ];
     in
       {
@@ -29,23 +29,24 @@
             }
         );
 
+        # Default package is script to call `nixos-rebuild` using the
+        # configuration.
         packages = forAllSystems (system:
           let
             pkgs = nixpkgs.legacyPackages.${system};
             deps = managementDependencies { inherit pkgs; };
-            stowed-config-location = /home/conor/.dotfiles/nixos/flake.nix;
+            stowed-config-location = ./nixos/flake.nix;
             rebuild-script = pkgs.writeText "rebuild-system.sh" ''
               sudo nixos-rebuild switch -I nixos-config=${stowed-config-location}
             ''; 
           in
             {
-              rebuild-system = pkgs.runCommandNoCCLocal "rebuild-system" {
+              default = pkgs.runCommandLocal "rebuild-system" {
                 nativeBuildInputs = with pkgs; [ makeWrapper ];
                 buildInputs = deps;
               } ''
                 install -Dm 755 ${rebuild-script} $out/bin/rebuild-system
-                patchShebangs $out/bin/rebuild-system.sh
-                wrapProgram $out/bin/rebuild-system.sh \
+                wrapProgram $out/bin/rebuild-system \
                   --prefix PATH : ${pkgs.lib.makeBinPath deps}
                 '';
             });

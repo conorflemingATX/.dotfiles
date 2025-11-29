@@ -1,432 +1,431 @@
-;;; package --- summary
+;;  -*- lexical-binding: t; -*-
+;; functions
 
-;;; Commentary:
+;; From orgmode.org
+(defun org-summary-todo (n-done n-not-done)
+  "Switch entry to DONE when all subentries are done, to TODO otherwise."
+  (let (org-log-done org-todo-log-states)   ; turn off logging
+    (org-todo (if (= n-not-done 0) "DONE" "TODO"))))
 
-;;; Code:
+;; From https://github.com/emacs-lsp/lsp-mode/issues/2842#issuecomment-870807018.
+(defun org-babel-edit-prep:fsharp (babel-info)
+  "Setup for lsp-mode in Org Src buffer using BABEL-INFO.bb."
+  (setq-local default-directory (->> babel-info caddr (alist-get :dir)))
+  (setq-local buffer-file-name (->> babel-info caddr (alist-get :tangle)))
+  (lsp-deferred))
 
-;; Basic UI Configuration ------------------------------------------------------
+(set-language-environment "UTF-8")
+(set-default-coding-systems 'utf-8)
+(prefer-coding-system 'utf-8)
 
-(setq inhibit-startup-message t)
+;; UI Modification
+(setq inhibit-startup-message t)  ; Scratch buffer on startup
+(scroll-bar-mode -1)              ; Disable visible scrollbar
+(tool-bar-mode -1)                ; Disable toolbar
+(tooltip-mode -1)                 ; Disable tooltips
+(set-fringe-mode 15)              ; Add some margin to buffer
+(menu-bar-mode -1)                ; Remove top menu bar
+(setq visible-bell t)             ; Visual bell
 
-(set-fringe-mode 10)        ; Give some breathing room
+;; Font
+(set-face-attribute 'default nil :font "Iosevka" :height 120)
+(set-face-attribute 'fixed-pitch nil :font "Iosevka" :height 120)
+(set-face-attribute 'variable-pitch nil :font "Iosevka" :height 110)
 
-;; Set up the visible bell
-(setq visible-bell t)
+;; Make ESC quit prompts
+(global-set-key (kbd "<escape>") 'keyboard-escape-quit)
 
-;; Font Configuration ----------------------------------------------------------
-
-(set-face-attribute 'default nil :font "Fira Code Retina")
-
-;; Set the fixed pitch face
-(set-face-attribute 'fixed-pitch nil :font "Fira Code Retina")
-
-;; Package Manager Configuration -----------------------------------------------
-
-;; Initialize package sources
-(require 'package)
-
-(setq package-archives '(("melpa" . "https://melpa.org/packages/")
-                         ("org" . "https://orgmode.org/elpa/")
-                         ("elpa" . "https://elpa.gnu.org/packages/")))
-
-(package-initialize)
-(unless package-archive-contents
- (package-refresh-contents))
-
-;; Initialize use-package on non-Linux platforms
-(unless (package-installed-p 'use-package)
-   (package-install 'use-package))
-
-(require 'use-package)
-(setq use-package-always-ensure t)
-
+;; Line numbers
 (column-number-mode)
 (global-display-line-numbers-mode t)
 
-(use-package afternoon-theme)
-(load-theme 'afternoon t)
+;; Line wrap
+(global-visual-line-mode)
+(delete-selection-mode t)
 
-;; envrc -----------------------------------------------------------------------
+;; Extra-Config
+(setq-default indent-tabs-mode nil)
+(setq backup-directory-alist `(("." . ,(expand-file-name "backup-files/" user-emacs-directory))))
+(setq load-prefer-newer t)
+
+;; Disable for certain file types
+(dolist
+    (mode
+     '(org-mode-hook
+       term-mode-hook
+       eshell-mode-hook))
+  (add-hook mode (lambda () (display-line-numbers-mode 0))))
+
+;; Package Management
+;; Package management is actually handled in home-manager config.
+;; This is just sort of a backup in case I don't feel like rebuilding.
+(require 'package)
+
+(setq package-archives '(("melpa"        . "https://melpa.org/packages/")
+                         ("melpa-stable" . "https://stable.melpa.org/packages/")
+                         ("elpa"         . "https://elpa.gnu.org/packages/")))
+
+(package-initialize)
+
+;; Refresh package list
+(when (not package-archive-contents)
+  (package-refresh-contents))
+
+;; Init use-package on non-linux platforms.
+(unless (package-installed-p 'use-package)
+  (package-install 'use-package))
+
+(use-package emacsql :ensure t)
+(use-package emacsql-sqlite :ensure t)
+
+(use-package all-the-icons
+  :ensure t)
+
+(use-package doom-themes
+  :ensure t
+  :config
+  (setq doom-themes-enable-bold t
+        doom-themes-enable-italic t)
+  (setq doom-font (font-spec :family "Iosevka" :size 12))
+  (load-theme 'doom-dracula t)
+  (doom-themes-visual-bell-config)
+  (setq doom-themes-treemacs-theme "doom-atom")
+  (doom-themes-treemacs-config)
+  (doom-themes-org-config))
+
+(use-package doom-modeline
+  :ensure t
+  :init (doom-modeline-mode 1))
+
+(use-package topspace
+  :ensure t)
+
 (use-package envrc
-  :after flycheck
-  :init
+  :ensure t
+  :config
   (envrc-global-mode))
 
-;; no-littering ----------------------------------------------------------------
-(use-package no-littering
+;; Completion (Ivy and Counsel)
+(use-package counsel
   :ensure t
-  :config
-  (setq auto-save-file-name-transforms
-	`((".*" ,(no-littering-expand-var-file-name "auto-save/") t))))
-
-;; exec-path -------------------------------------------------------------------
-(use-package exec-path-from-shell
-  :ensure
-  :init (exec-path-from-shell-initialize))
-
-;; quick-peek ------------------------------------------------------------------
-;; (use-package quick-peek
-;;   :ensure t)
-
-;; swiper ----------------------------------------------------------------------
-(use-package swiper
-  :ensure t)
-
-;; multiple-cursors ------------------------------------------------------------
-(use-package multiple-cursors
-  :ensure t
+  :diminish
   :bind
-  (("C-S-c C-S-c" . "mc/edit-lines")
-   ("C-c m" . "mc/mark-all-like-this")
-   ("C->" . "mc/mark-next-like-this")
-   ("C-<" . "mc/mark-previous-like-this")))
-
-;; lsp-mode --------------------------------------------------------------------
-(use-package lsp-mode
-  :ensure t
+  (("M-x"     . counsel-M-x)
+   ("C-x b"   . counsel-ibuffer)
+   ("C-x C-f" . counsel-find-file))
   :config
-  (setq lsp-diagnostics-provider :flycheck
-	 lsp-eldoc-render-all nil
-	 lsp-headerline-breadcrumb-enable nil
-	 lsp-modeline-code-actions-enable nil
-	 lsp-modeline-diagnostics-enable nil
-	 lsp-modeline-workspace-status-enable nil)
-  (setq lsp-rust-analyzer-cargo-watch-command "clippy"
-	lsp-rust-analyzer-server-display-inlay-hints t))
-
-(use-package lsp-ui
-  :ensure t
-  :hook
-  ((web-mode . lsp-mode)
-   (lsp-mode . lsp-enable-which-key-integration))
-  :config
-  (setq lsp-ui-sideline-show-diagnostics t)
-  (setq lsp-ui-sideline-show-hover t)
-  (setq lsp-ui-sideline-show-code-actions t)
-  (setq lsp-restart 'auto-restart))
-
-(use-package lsp-haskell
-  :ensure t
-  :defer t
-  :hook
-  (haskell-mode . (lambda ()
-		    (lsp))))
-
-;; Eglot ----------------------------------------------------------------------
-(use-package eglot
-  :ensure t)
-
-(use-package eglot-fsharp
-  :ensure t
-  :after '(eglot fsharp-mode))
-
-;; Ivy Configuration -----------------------------------------------------------
+  (setq ivy-initial-inputs-alist nil))
 
 (use-package ivy
+  :ensure t
   :diminish
-  :bind (("C-s" . swiper)
-         :map ivy-minibuffer-map
-         ("TAB" . ivy-alt-done)
-         ("C-l" . ivy-alt-done)
-         ("C-j" . ivy-next-line)
-         ("C-k" . ivy-previous-line)
-         :map ivy-switch-buffer-map
-         ("C-k" . ivy-previous-line)
-         ("C-l" . ivy-done)
-         ("C-d" . ivy-switch-buffer-kill)
-         :map ivy-reverse-i-search-map
-         ("C-k" . ivy-previous-line)
-         ("C-d" . ivy-reverse-i-search-kill))
-  :config
-  (ivy-mode 1))
-
-(use-package rainbow-delimiters
-  :hook (prog-mode . rainbow-delimiters-mode))
+  :bind (:map ivy-minibuffer-map
+         ("TAB" . ivy-alt-done))
+  :config (ivy-mode 1)
+          (setq ivy-wrap t)
+          (setq ivy-use-virtual-buffers t)
+          (setq enable-recursive-minibuffers t))
 
 (use-package ivy-rich
-  :init
-  (ivy-rich-mode 1))
+  :ensure t
+  :init (ivy-rich-mode 1))
 
-(use-package lsp-ivy
+(use-package ivy-prescient
+  :ensure t
+  :after counsel
+  :custom
+  (ivy-prescient-enable-filtering nil)
+  :config
+  (ivy-prescient-mode 1))
+
+(use-package company
+  :ensure t
+  :bind (:map company-active-map ("<tab>" . company-complete-selection))
+  :config (global-company-mode t))
+
+;; Projects
+(use-package projectile
+  :ensure t
+  :diminish
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :custom
+  (projectile-completion-system 'ivy)
+  :config
+  (projectile-mode))
+
+(use-package counsel-projectile
+  :ensure t
+  :after (counsel projectile)
+  :config
+  (counsel-projectile))
+
+(use-package exec-path-from-shell
+  :ensure t
+  :config (exec-path-from-shell-initialize)
+  (exec-path-from-shell-copy-env "NIX_PATH"))
+
+;; Git
+(use-package magit
   :ensure t)
 
-(use-package counsel
-  :bind (("M-x" . counsel-M-x)
-         ("C-x b" . counsel-ibuffer)
-         ("C-x C-f" . counsel-find-file)
-         :map minibuffer-local-map
-         ("C-r" . 'counsel-minibuffer-history)))
+(use-package which-key
+  :ensure t
+  :diminish
+  :config
+  (which-key-mode)
+  (setq which-key-idle-delay 0.5))
 
+;; Better help messages
 (use-package helpful
+  :ensure t
   :custom
   (counsel-describe-function-function #'helpful-callable)
   (counsel-describe-variable-function #'helpful-variable)
   :bind
   ([remap describe-function] . counsel-describe-function)
-  ([remap describe-command] . helpful-command)
+  ([remap describe-command]  . helpful-command)
   ([remap describe-variable] . counsel-describe-variable)
-  ([remap describe-key] . helpful-key))
+  ([remap describe-key]      . helpful-key))
 
-(use-package which-key
-  :ensure t
-  :config
-  (which-key-mode))
-
-;; Projectile Configuration ----------------------------------------------------
-
-(use-package projectile
-  :diminish projectile-mode
-  :config (projectile-mode)
-  :custom ((projectile-completion-system 'ivy))
-  :init)
-
-(use-package counsel-projectile
-  :config (counsel-projectile-mode))
-
-;; Magit Configuration ---------------------------------------------------------
-
-(use-package magit
-  :custom
-  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
-
-(defun efs/org-mode-setup ()
-  "Setup variables for 'org-mode'."
-  (variable-pitch-mode 1)
-  (visual-line-mode 1))
-
-;; Company ---------------------------------------------------------------------
-(setq company-minimum-prefix-length 1
-      company-idle-delay 0.0)
-
-(use-package company
-  :config (add-hook 'after-init-hook 'global-company-mode))
-
-(use-package company-cabal
-  :ensure t
-  :after company
-  :config
-  (add-to-list 'company-backends 'company-cabal))
-
-;; Flycheck --------------------------------------------------------------------
+;; Language Configs
+;; flycheck
 (use-package flycheck
   :ensure t
-  :init
-  (global-flycheck-mode)
-  :bind
-  (("M-n" . flycheck-next-error)
-   ("M-p" . flycheck-previous-error))
+  :diminish
+  :hook ((flycheck . flycheck-inline)
+         (flycheck . 'my/use-eslint-from-node-modules))
   :config
-  (setq-default flycheck-global-modes '(not org-mode fsharp-mode)))
+  (global-flycheck-mode))
 
 (use-package flycheck-inline
   :ensure t
-  :after flycheck
-  :hook (flycheck-mode . flycheck-inline-mode))
+  :diminish
+  :after (flycheck))
 
-(use-package flymake-diagnostic-at-point
+;; LSP
+(use-package lsp-mode
   :ensure t
-  :after flymake
-  :hook
-  (flymake-mode . flymake-diagnostic-at-point-mode))
-
-;; Org Mode Configuration ------------------------------------------------------
-(use-package jupyter
-  :defer t
+  :config
+  (lsp-enable-which-key-integration t)
+  (setq lsp-auto-configure t)
   :init
-  (setq org-babel-default-header-args:jupyter-python '((:async . "yes")
-                                                       (:session . "py"))))
+  (setq lsp-keymap-prefix "C-c l"))
+
+(use-package lsp-ui
+  :ensure t
+  :config
+  (setq lsp-ui-sideline-show-diagnostics t
+        lsp-ui-sideline-hover t))
+
+(use-package lsp-ivy
+  :ensure t)
+
+(use-package project :ensure t)
+
+(use-package eglot
+  :ensure t
+  :after (project projectile))
+
+;; Org
+(use-package org-roam
+  :ensure t
+  :init (setq org-roam-v2-ack t)
+  :custom ((org-roam-directory "~/Documents/Notes"))
+  :config (org-roam-setup))
+
+(use-package ob-fsharp
+  :ensure t
+  :config
+  (setq inferior-fsharp-program "dotnet fsi --readline-"))
 
 (use-package org
-  :ensure org-plus-contrib
-  :hook (org-mode . efs/org-mode-setup)
+  :ensure t
+  :bind (("C-c l" . org-store-link)
+         ("C-c a" . org-agenda)
+         ("C-c c" . org-capture))
+  :hook ((org-after-todo-statistics . org-summary-todo))
   :config
-  (setq org-ellipsis " ▾")
-  (setq org-agenda-start-with-log-mode t)
-  (setq org-log-done 'time)
-  (setq org-log-into-drawer t)
-  (setq org-confirm-babel-evaluate nil)
-  (setq org-src-fontify-natively t)
-  (setq org-src-tab-acts-natively t)
+  (org-indent-mode)
+  (variable-pitch-mode 1)
+  (visual-line-mode 1)
+  (setq org-ellipsis " ▾"
+        org-agenda-start-with-log-mode t
+        org-log-done 'time
+        org-log-into-drawer t
+        org-confirm-babel-evaluate nil
+        org-src-fontify-natively t
+        org-src-tab-acts-natively t
+        org-src-preserve-indentation t
+        org-support-shift-select nil
+        org-todo-keywords
+        '((sequence "TODO" "DO" "AWAIT" "|" "DONE" "NM"))
+        org-agenda-files (list "~/Documents/Todo" "~/work" "~/work/daily-files"))
   (org-babel-do-load-languages
-    'org-babel-load-languages
-    '((jupyter . t)
-      (haskell . t))))
+   'org-babel-load-languages
+   '((shell    . t)
+     (plantuml . t)
+     (python   . t)
+     (fsharp   . t)))
+  (add-to-list
+   'org-src-lang-modes '("plantuml" . plantuml)))
+
+(setq org-todo-keywords '((sequence "TODO" "DO" "AWAIT" "|" "DONE" "NM")))
+
+(use-package org-auto-tangle
+  :ensure t
+  :defer t
+  :hook (org-mode . org-auto-tangle-mode))
 
 (use-package org-bullets
+  :diminish
+  :ensure t
   :after org
   :hook (org-mode . org-bullets-mode)
   :custom
   (org-bullets-bullet-list '("◉" "○" "●" "○" "●" "○" "●")))
 
-;; JSON ------------------------------------------------------------------------
-(defun cf/format-json-on-save ()
-  "Format json on save."
-  (add-hook 'before-save-hook #'json-pretty-print-buffer))
-
-(add-hook 'json-mode #'cf/format-json-on-save)
-
-;; web-mode --------------------------------------------------------------------
-
-
-(use-package add-node-modules-path
+(use-package org-fancy-priorities
+  :diminish
   :ensure t
-  :after (flycheck web-mode)
-  :hook
-  (web-mode . add-node-modules-path)
+  :hook (org-mode . org-fancy-priorities-mode)
   :config
-  (when (executable-find "eslint")
-    (print "found eslint!")))
+  (setq org-fancy-priorities-list '("🅰" "🅱" "🅲" "🅳" "🅴")))
 
+(use-package org-pretty-tags
+  :diminish org-pretty-tags-mode
+  :ensure t
+  :config
+  (setq org-pretty-tags-surrogate-strings
+        '(("work"  . "⚒")))
+  (org-pretty-tags-global-mode))
 
-(defun web-mode-init-prettier ()
-  "Configure prettier for use with 'web-mode'."
-  (add-node-modules-path)
-  (prettier-js-mode))
+(use-package nix-mode
+  :ensure t
+  :mode "\\.nix\\'")
 
-(setq-default flycheck-disabled-checkers
-	      (append flycheck-disabled-checkers
-		      '(javascript-jshint json-jsonlint)))
-(setq web-mode-markup-indent-offset 2)
-(setq web-mode-code-indent-offset 2)
-(setq web-mode-css-indent-offset 2)
+(use-package plantuml-mode
+  :ensure t
+  :mode "\\.plantuml\\'")
+
+;; lisp
+;; (use-package parinfer-rust-mode
+  ;; :ensure t
+  ;; :hook ((emacs-lisp-mode . parinfer-rust-mode)
+         ;; (racket-mode     . parinfer-rust-mode)))
+
+(use-package racket-mode :ensure t)
+
+(use-package ob-powershell
+  :ensure t
+  :custom (ob-powershell-powershell-command "pwsh"))
+
+;; html and css
 (use-package web-mode
   :ensure t
-  :after (flycheck prettier-js)
-  :hook
-  (web-mode . web-mode-init-prettier)
-  (web-mode . lsp)
-  :mode (("\\.js\\'" . web-mode)
-	 ("\\.jsx\\'" . web-mode)
-	 ("\\.ts\\'" . web-mode)
-	 ("\\.tsx\\'" . web-mode)
-	 ("\\.html\\'" . web-mode))
-  :commands web-mode)
+  :config ((setq web-mode-markup-indent-offset 2)
+           (setq web-mode-css-indent-offset 2)
+           (setq web-mode-code-indent-offset 2))
+  :mode (("\\.html\\'" . web-mode)
+         ("\\.css\\'" . web-mode)
+         ("\\.cshtml\\'" . web-mode))
+  :hook ((web-mode . emmet-mode)))
 
-;; Typescript ------------------------------------------------------------------
-(use-package prettier-js
+(use-package emmet-mode
+  :ensure t
+  :bind ("C-j" . emmet-expand-line))
+
+(use-package json-mode
   :ensure t)
 
-;; Nix -------------------------------------------------------------------------
-;;(use-package nix-mode
-;;  :ensure t
-;;  :mode ("\\.nix\\'"))
+(use-package company-ghci
+  :ensure t
+  :after company-mode
+  :config (add-to-list 'company-backends 'company-ghci))
 
-;; Elixir ----------------------------------------------------------------------
-;; (use-package elixir-mode
-;;   :ensure t
-;;   :defer t
-;;   :after '(lsp flycheck)
-;;   :hook
-;;   ((elixir-mode . (lambda () (add-hook 'before-save-hook 'elixir-format nil r)))
-;;    (elixir-mode . lsp)))
+(use-package haskell-mode
+  :ensure t
+  :defer t
+  :hook ((haskell-mode . lsp-deferred)
+         (haskell-mode . interactive-haskell-mode))
+  :config (setq haskell-mode-stylish-haskell-package "brittany"
+                lsp-haskell-process-path-hie "haskell-language-server-wrapper"
+                lsp-haskell-process-args-hie '("-d" "-l" "/tmp/hls.log")
+                haskell-process-type 'cabal-repl))
 
-;; Ocaml -----------------------------------------------------------------------
-;; (defun in-nix-shell-p ()
-;;   "Predicate indicating if in nix-shell."
-;;   (string-equal (getenv "IN_NIX_SHELL") "1"))
-;; 
-;; (use-package tuareg
-;;   :ensure t
-;;   :config
-;;   ((setq conor/merlin-site-elisp (getenv "MERLIN_SITE_LISP"))
-;;    (setq conor/utop-site-elisp (getenv "UTOP_SITE_LISP"))
-;;    (setq conor/ocp-site-elisp (getenv "OCP_INDENT_SITE_LISP")))
-;;   :hook
-;;   (tuareg-mode .lsp))
-;; 
-;; (use-package utop
-;;   :ensure t
-;;   :hook
-;;   (tuareg-mode . utop-minor-mode)
-;;   :config
-;;   (setq utop-command "utop -emacs"))
-;; 
-;; (use-package merlin
-;;   :ensure t
-;;   :hook
-;;   ((tuareg-mode . merlin-mode)
-;;    (merlin-mode . company-mode))
-;;   :config
-;;   (customize-set-variable 'merlin-command "ocamlmerlin"))
-;; 
-;; (use-package ocp-indent
-;;   :ensure t)
+(use-package lsp-haskell
+  :ensure t
+  :defer t
+  :config (setq lsp-haskell-server-path "haskell-language-server-wrapper"))
 
-;; Haskell ---------------------------------------------------------------------
-;;(use-package haskell-mode
-;;  :ensure t
-;;  :mode
-;;  (("\\.hs\\'" . haskell-mode)
-;;   ("\\.hsc\\'" . haskell-mode)
-;;   ("\\.c2hs\\'" . haskell-mode)
-;;   ("\\.cpphs\\'" . haskell-mode)
-;;   ("\\.lhs\\'" . haskell-literate-mode))
-;;  :hook
-;;  (haskell-mode . (lambda ()
-;;		    ;; Key bindings for Haskell process
-;;		    (define-key haskell-mode-map [?\C-c ?\C-l] 'haskell-process-load-file)
-;;		    (define-key haskell-mode-map [f5] 'haskell-process-load-file)
-;;		    ;; switch to repl
-;;		    (define-key haskell-mode-map [?\C-c ?\C-z] 'haskell-interactive-switch)
-;;		    (define-key haskell-mode-map (kbd "C-@") 'haskell-interactive-bring)
-;;		    ;; Set formatting on save
-;;		    (setq haskell-stylish-on-save t)
-;;		    (setq haskell-mode-stylish-haskell-path "brittany")
-;;		    (subword-mode)))
-;;  :config
-;;  (setq tab-width 2
-;;	haskell-process-log t
-;;	haskell-notify-p t))
+(use-package python-mode
+  :ensure nil
+  :hook ((python-mode . lsp)))
 
-;; F# --------------------------------------------------------------------------
-;; (use-package dotnet
-;;   :ensure t)
-;; 
-;; (use-package fsharp-mode
-;;   :ensure t
-;;   :after '(eglot flycheck flycheck-inline)
-;;   :hook
-;;   ((fsharp-mode . eglot-ensure)
-;;    (fsharp-mode . dotnet-mode))
-;;   :init
-;;   ((setq inferior-fsharp-program "dotnet fsi --readline-")))
+(use-package python-black
+  :ensure t
+  :after python
+  :hook (python-mode . python-black-on-save-mode-enable-dwim))
 
-;; Rust ------------------------------------------------------------------------
-(use-package rustic
-  :ensure
-  :bind (:map rustic-mode-map
-	      ("M-j" . lsp-ui-imenu)
-	      ("M-?" . lsp-find-references)
-	      ("C-c C-c l" . flycheck-list-errors)
-	      ("C-c C-c a" . lsp-execute-code-action)
-	      ("C-c C-c r" . lsp-rename)
-	      ("C-c C-c q" . lsp-workspace-restart)
-	      ("C-c C-c Q" . lsp-workspace-shutdown)
-	      ("C-c C-c s" . lsp-rust-analyzer-status))
-  :config
-  ;; uncomment for less flashiness
-  ;; (setq lsp-eldoc-hook nil)
-  ;; (setq lsp-enable-symbol-highlighting nil)
-  ;; (setq lsp-signature-auto-activate nil)
+(use-package csharp-mode
+  :ensure nil
+  :hook ((csharp-mode . lsp-deferred)))
 
-  ;; comment to disable rustfmt on save
-  (setq rustic-format-on-save t)
-  (add-hook 'rustic-mode-hook 'rk/rustic-mode-hook))
+(use-package fsharp-mode
+  :ensure t
+  :defer t)
 
-(defun rk/rustic-mode-hook ()
-  "So that run works without having to confirm."
-  (when buffer-file-name
-    (setq-local buffer-save-without-query t)))
+(use-package fsharp-mode
+  :ensure t
+  :config (setq lsp-fsharp-use-dotnet-tool-for-fsac nil)
+  :hook ((fsharp-mode . lsp-deferred)))
 
-;; custom variables (Do not edit) ----------------------------------------------
+(use-package nxml-mode
+  :ensure nil
+  :hook ((nxml-mode . lsp-deferred)))
+
+(use-package rescript-mode
+  :ensure t
+  :hook ((rescript-mode . lsp)))
+
+(use-package lsp-rescript
+  :ensure t
+  :after rescript-mode)
+
+(use-package powershell
+  :ensure t
+  :mode (("\\.ps1\\'" . powershell-mode)
+         ("\\.psm1\\'" . powershell-mode)))
+
+(use-package yaml-mode
+  :ensure t
+  :mode (("\\.yaml\\'" . yaml-mode)))
+
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(flycheck-checker-error-threshold 600)
+ '(browse-url-browser-function 'browse-url-firefox)
  '(package-selected-packages
-   '(lsp-ui jupyter magit counsel-projectile counsel ivy-rich ivy with-editor use-package tide slime sass-mode rjsx-mode rainbow-mode rainbow-delimiters pug-mode projectile prettier-js parinfer-rust-mode org-bullets olivetti ob-ipython ob-elixir nix-mode neotree markdown-mode lavenderless-theme lavender-theme json-mode indium helpful fsharp-mode elixir-mode dracula-theme afternoon-theme)))
+   '(add-node-modules-path all-the-icons apheleia company-ghci
+                           counsel-projectile csv-mode dap-mode
+                           doom-modeline doom-themes emmet-mode envrc
+                           exec-path-from-shell flycheck-inline
+                           helpful ivy-prescient ivy-rich jest
+                           json-mode lsp-haskell lsp-ivy lsp-rescript
+                           lsp-ui mocha nix-mode no-littering
+                           ob-fsharp ob-powershell org-auto-tangle
+                           org-bullets org-fancy-priorities
+                           org-pretty-tags org-roam parinfer-rust-mode
+                           plantuml-mode powershell prettier-js
+                           python-black quelpa-use-package racket-mode
+                           rainbow-delimiters repl-toggle ruff-format
+                           rustic skewer-mode topspace
+                           treemacs-icons-dired treemacs-magit
+                           treemacs-projectile treesit-auto ts-comint
+                           typescript-mode web-mode which-key
+                           yaml-mode yasnippet-snippets)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -434,5 +433,10 @@
  ;; If there is more than one, they won't work right.
  )
 
-(provide 'init)
-;;; init.el ends here
+;; Source - https://stackoverflow.com/a
+;; Posted by user355252, modified by community. See post 'Timeline' for change history
+; Retrieved 2025-11-27, License - CC BY-SA 3.0
+(setq-default flycheck-emacs-lisp-load-path 'inherit)
+(add-to-list 'load-path (expand-file-name "~/.config/emacs/config"))
+
+(require 'config)

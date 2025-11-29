@@ -1,9 +1,0 @@
-* What should I do next?
-
-I should start to try and actually get this thing set up for development.
-
-1. Haskell
-2. Elixir
-3. Babel Org
-
-What else can I do with Org? I know that the answer is: A lot. I wonder how I can find out or see how things come up naturally and what I really want to do.

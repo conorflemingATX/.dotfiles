@@ -79,7 +79,6 @@
   environment.systemPackages = with pkgs; [
     git
     direnv
-    stow
     git-crypt
     wget
     semgrep

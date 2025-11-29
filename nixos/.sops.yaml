@@ -1,0 +1,11 @@
+keys:
+  - &users:
+    - &backup age1497r3m38c4fdmljh4nhyqemld5eapm975uypxdwcwtp8uy54cudseaf9sy
+  - &hosts:
+    - &nixos age1tflnlm5t5nd3qls9jjrxh3qugk2vk845n20llandpk6n098uwgxs8kdf9y
+creation_rules:
+  - path_regex: secrets.yaml$
+    key_groups:
+    - age:
+      - *backup
+      - *nixos

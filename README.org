@@ -1,5 +1,0 @@
-* Dotfiles
-
-A Repository containing all of my configuration to my user profile so far. It's pretty bare bones for now, but I intend to add quite a bit fairly soon.
-
-Nearly everything is configured using Nix and Home-manager. I haven't had much of a reason to use anything else quite yet.
