@@ -139,6 +139,7 @@
 
 (use-package company
   :ensure t
+  :hook (lsp-mode . company-mode)
   :bind (:map company-active-map ("<tab>" . company-complete-selection))
   :config (global-company-mode t))
 
@@ -205,14 +206,20 @@
 ;; LSP
 (use-package lsp-mode
   :ensure t
+  :after company-mode
+  :commands (lsp lsp-deferred)
   :config
   (lsp-enable-which-key-integration t)
   (setq lsp-auto-configure t)
+  (setq lsp-enable-suggest-server-download nil)
+  (add-to-list 'lsp-disabled-clients 'semgrep-ls)
+  (add-to-list 'lsp-enabled-clients  'pyls)
   :init
   (setq lsp-keymap-prefix "C-c l"))
 
 (use-package lsp-ui
   :ensure t
+  :after lsp-mode
   :config
   (setq lsp-ui-sideline-show-diagnostics t
         lsp-ui-sideline-hover t))
@@ -359,12 +366,20 @@
 
 (use-package python-mode
   :ensure nil
-  :hook ((python-mode . lsp)))
+  :hook ((python-mode . lsp-deferred)
+         (python-mode . python-black-on-save-mode)
+         (python-mode . company-mode))
+  :config
+  (setq lsp-pylsp-plugins-black-enabled t))
 
 (use-package python-black
   :ensure t
-  :after python
-  :hook (python-mode . python-black-on-save-mode-enable-dwim))
+  :after python)
+
+(use-package yasnippet
+  :ensure t
+  :config
+  (yas-global-mode 1))
 
 (use-package csharp-mode
   :ensure nil
@@ -399,6 +414,9 @@
 (use-package yaml-mode
   :ensure t
   :mode (("\\.yaml\\'" . yaml-mode)))
+
+(use-package dap-mode
+  :ensure nil)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
