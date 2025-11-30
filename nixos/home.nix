@@ -26,6 +26,6 @@
     programs.home-manager.enable = true;
     programs.emacs = {
       enable = true;
-      package = import ./emacs.nix { inherit pkgs; };
+      package = import ../emacs/emacs.nix { inherit pkgs; };
     };
 }

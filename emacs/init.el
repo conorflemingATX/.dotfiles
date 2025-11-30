@@ -79,16 +79,20 @@
 (use-package all-the-icons
   :ensure t)
 
-(use-package doom-themes
+;; (use-package doom-themes
+  ;; :ensure t
+  ;; :custom
+  ;; (doom-themes-enable-bold t)
+  ;; (doom-themes-enable-italic t)
+  ;; :config
+  ;; (setq doom-font (font-spec :family "Iosevka" :size 12))
+  ;; (load-theme 'doom-dracula t)
+  ;; (doom-themes-visual-bell-config)
+  ;; (doom-themes-org-config))
+
+(use-package dracula-theme
   :ensure t
-  :custom
-  (doom-themes-enable-bold t)
-  (doom-themes-enable-italic t)
-  :config
-  (setq doom-font (font-spec :family "Iosevka" :size 12))
-  (load-theme 'doom-dracula t)
-  (doom-themes-visual-bell-config)
-  (doom-themes-org-config))
+  :config (load-theme 'dracula t))
 
 (use-package doom-modeline
   :ensure t
