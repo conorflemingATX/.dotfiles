@@ -57,8 +57,6 @@
   (add-hook mode (lambda () (display-line-numbers-mode 0))))
 
 ;; Package Management
-;; Package management is actually handled in home-manager config.
-;; This is just sort of a backup in case I don't feel like rebuilding.
 (require 'package)
 
 (setq package-archives '(("melpa"        . "https://melpa.org/packages/")
@@ -72,6 +70,9 @@
 ;; Init use-package on non-linux platforms.
 (unless (package-installed-p 'use-package)
   (package-install 'use-package))
+
+(require 'use-package)
+(setq use-package-always-require t)
 
 (use-package emacsql :ensure t)
 (use-package emacsql-sqlite :ensure t)
@@ -97,9 +98,6 @@
 (use-package doom-modeline
   :ensure t
   :init (doom-modeline-mode 1))
-
-(use-package topspace
-  :ensure t)
 
 (use-package envrc
   :ensure t
