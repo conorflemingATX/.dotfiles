@@ -19,6 +19,9 @@
     python-package-template = {
       url = "git+file:///home/conor/packages/python/python-package-template";
     };
+    python-example-webapp = {
+      url = "git+file:///home/conor/packages/python/python-example-webapp";
+    };
     emacs-package-template = {
       url = "git+file:///home/conor/packages/emacs/emacs-package-template";
     };
@@ -30,6 +33,7 @@
     home-manager,
     emacs-overlay,
     python-package-template,
+    python-example-webapp,
     emacs-package-template,  
     ...
   }@inputs:
@@ -52,6 +56,7 @@
           specialArgs = { inherit home-manager; };
           modules = [
             ./configuration.nix
+            python-example-webapp.nixosModules.default
           ];
         };
       };

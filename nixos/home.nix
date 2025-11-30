@@ -21,6 +21,9 @@
 
     # Services
     services.emacs.enable = true;
+
+    # Test python service.
+    services.python-example-webapp.enable = true;
     
     # Programs
     programs.home-manager.enable = true;
